@@ -4,6 +4,7 @@ const UTIL = require("util");
 const URL = require("url");
 const FS = require("fs-extra");
 const EVENTS = require("events");
+const STACK_TRACE = require("stack-trace");
 
 
 exports.READ_METHODS = {
@@ -96,8 +97,8 @@ var FileFS = exports.FileFS = function(options) {
 UTIL.inherits(FileFS, EVENTS.EventEmitter);
 
 
-FileFS.prototype.notifyUsedPath = function(path, method) {
-	this.emit("used-path", path, method);
+FileFS.prototype.notifyUsedPath = function(path, method, meta) {
+	this.emit("used-path", path, method, meta);
 /*
 	if (exports.READ_METHODS[method]) {
 		console.log(("[pinf-for-nodejs][vfs] use READ method '" + method + "' for: " + path).magenta);
@@ -133,7 +134,11 @@ Object.keys(FS).forEach(function(name) {
 			if (arguments[1] === "r" || arguments[1] === "rs") {
 				mode = "read";
 			}
-			this.notifyUsedPath(arguments[0], name + "-" + mode);
+			var meta = {};
+			if (this._options.lineinfo) {
+				var trace = STACK_TRACE.get();
+			}
+			this.notifyUsedPath(arguments[0], name + "-" + mode, meta);
 			return FS[name].apply(null, arguments);
 		};
 	} else
@@ -150,7 +155,13 @@ Object.keys(FS).forEach(function(name) {
 		)
 	) {
 		FileFS.prototype[name] = function() {
-			this.notifyUsedPath(arguments[index], name);
+			var meta = {};
+			if (this._options.lineinfo) {
+				var trace = STACK_TRACE.get();
+				meta.file = trace[1].getFileName();
+				meta.line = trace[1].getLineNumber();
+			}
+			this.notifyUsedPath(arguments[index], name, meta);
 			var cb = arguments[arguments.length-1];
 			if (typeof cb === "function" && name !== "exists") {
 				arguments[arguments.length-1] = function(err) {

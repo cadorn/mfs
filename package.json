@@ -5,7 +5,8 @@
   "publish": true,
   "main": "./mfs.js",
   "dependencies": {
-    "fs-extra": "~0.9.1"
+    "fs-extra": "~0.9.1",
+    "stack-trace": "~0.0.9"
   },
   "devDependencies": {
     "mocha": "~1.20.1"

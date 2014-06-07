@@ -12,11 +12,13 @@ Usage
 -----
 
 	const MFS = require("mfs");
-	const FS = new MFS.FileFS();
+	const FS = new MFS.FileFS({
+		lineinfo: true
+	});
 
 	if (process.env.DEBUG) {
-		FS.on("used-path", function(path, method) {
-			console.log("FS." + method, path);
+		FS.on("used-path", function(path, method, meta) {
+			console.log("FS." + method, path, meta);
 		});
 	}
 
