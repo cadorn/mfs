@@ -146,7 +146,8 @@ Object.keys(FS).forEach(function(name) {
 		typeof FS[name] === "function" &&
 		/^[a-z]/.test(name) &&
 		(source = FS[name].toString()) &&
-		(args = source.match(/function[^\(]+\(([^\)]*)\)/)[1].split(", ")) &&
+		(matches = source.match(/function[^\(]+\(([^\)]*)\)/)) &&
+		(args = matches[1].split(", ")) &&
 		(
 			(index = args.indexOf("path")) >= 0 ||
 			(index = args.indexOf("dir")) >= 0 ||

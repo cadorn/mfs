@@ -14,7 +14,7 @@ describe('mfs', function() {
 			ASSERT.equal(method, "existsSync");
 			ASSERT.equal(path, __dirname);
 			ASSERT.deepEqual(meta, {
-				file: '/genesis/github.com~cadorn/mfs/mfs.test.js',
+				file: PATH.join(__dirname, 'mfs.test.js'),
 				line: 22
 			});
 			return done(null);
