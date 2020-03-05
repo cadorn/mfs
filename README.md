@@ -1,7 +1,7 @@
 mfs
 ===
 
-Monitor your calls to [node-fs-extra](https://github.com/jprichardson/node-fs-extra).
+Monitor your calls to [node-fs-extra](https://github.com/jprichardson/node-fs-extra) for debug purposes.
 
 Install
 -------
@@ -25,9 +25,7 @@ Usage
 	FS.existsSync(__dirname);
 
 
-License
--------
+Provenance
+----------
 
-Licensed under MIT
-
-Copyright (c) 2013-2014 Christoph Dorn
+Licensed under the **MIT License** by Christoph Dorn since 2013.
