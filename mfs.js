@@ -1,10 +1,10 @@
 
-const PATH = require("path");
-const UTIL = require("util");
-const URL = require("url");
-const FS = require("fs-extra");
-const EVENTS = require("events");
-const STACK_TRACE = require("stack-trace");
+const PATH = require('path');
+const UTIL = require('util');
+const URL = require('url');
+const FS = require('fs-extra');
+const EVENTS = require('events');
+const STACK_TRACE = require('stack-trace');
 
 
 exports.READ_METHODS = {
@@ -33,7 +33,15 @@ exports.READ_METHODS = {
 	"readJSONSync": true,
 	"open-read": true,
 	"fstat": true,
-	"read": true
+	"read": true,
+	"pathExists": true,
+	"pathExistsSync": true,
+	"realpath": true,
+	"realpathSync": true,
+	"watch": true,
+	"watchSync": true,
+	"watchFile": true,
+	"unwatchFile": true
 };
 
 exports.WRITE_METHODS = {
@@ -81,13 +89,41 @@ exports.WRITE_METHODS = {
 	"writeJSON": true,
 	"writeJsonSync": true,
 	"writeJSONSync": true,
-	"open-write": true,
-	"ftruncate": true,
 	"write": true,
+	"mkdirs": true,
+	"mkdirsSync": true,
+	"mkdirp": true,
+	"mkdirpSync": true,
+	"ensureDir": true,
+	"ensureDirSync": true,
+	"move": true,
+	"moveSync": true,
+	"copyFile": true,
+	"copyFileSync": true,
+	"rename": true,
+	"renameSync": true,
+	"write": true,
+	"writeSync": true,
+	"copy": true,
+	"copySync": true,
+	"emptyDir": true,
+	"emptyDirSync": true,
+	"emptydir": true,
+	"emptydirSync": true,
+	"ensureFile": true,
+	"ensureFileSync": true,
+	"createLink": true,
+	"createLinkSync": true,
+	"ensureLink": true,
+	"ensureLinkSync": true,
+	"createSymlink": true,
+	"createSymlinkSync": true,
+	"ensureSymlink": true,
+	"ensureSymlinkSync": true,
 	"outputFileAtomic": true
 };
 
-var FileFS = exports.FileFS = function(options) {
+var FileFS = exports.FileFS = function (options) {
 	var self = this;
 	self._options = options;
 	self.READ_METHODS = exports.READ_METHODS;
@@ -97,26 +133,26 @@ var FileFS = exports.FileFS = function(options) {
 UTIL.inherits(FileFS, EVENTS.EventEmitter);
 
 
-FileFS.prototype.notifyUsedPath = function(path, method, meta) {
-	this.emit("used-path", path, method, meta);
+FileFS.prototype.notifyUsedPath = function (path, method, meta) {
+	this.emit('used-path', path, method, meta);
 /*
 	if (exports.READ_METHODS[method]) {
-		console.log(("[pinf-for-nodejs][vfs] use READ method '" + method + "' for: " + path).magenta);
+		console.log(("[mfs] use READ method '" + method + "' for: " + path).magenta);
 	} else
 	if (exports.WRITE_METHODS[method]) {
-		console.log(("[pinf-for-nodejs][vfs] use WRITE method '" + method + "' for: " + path).magenta);
+		console.log(("[mfs] use WRITE method '" + method + "' for: " + path).magenta);
 	} else {
-		console.log(("[pinf-for-nodejs][vfs] use method '" + method + "' for: " + path).magenta);
+		console.log(("[mfs] use method '" + method + "' for: " + path).magenta);
 	}
 */
 }
 
-FS.outputFileAtomic = function(path, data, callback) {
-	var tmpPath = path + "~" + Date.now();
-    return FS.outputFile(tmpPath, data, function(err) {
+FS.outputFileAtomic = function (path, data, callback) {
+	var tmpPath = path + '~' + Date.now();
+    return FS.outputFile(tmpPath, data, function (err) {
     	if (err) return callback(err);
     	// Assume file exists.
-    	return FS.unlink(path, function() {
+    	return FS.unlink(path, function () {
     		// We ignore error.
     		return FS.rename(tmpPath, path, callback);
     	});
@@ -124,63 +160,60 @@ FS.outputFileAtomic = function(path, data, callback) {
 }
 
 // Intercept all FS methods that have a path like argument.
-Object.keys(FS).forEach(function(name) {
-	var source = null;
-	var args = null;
-	var index = -1;
-	if (name === "open") {
-		FileFS.prototype[name] = function() {
-			var mode = "write";
-			if (arguments[1] === "r" || arguments[1] === "rs") {
-				mode = "read";
+Object.keys(FS).forEach(function (name) {
+	let source = null;
+	if (name === 'open') {
+		FileFS.prototype[name] = function () {
+			var mode = 'write';
+			if (arguments[1] === 'r' || arguments[1] === 'rs') {
+				mode = 'read';
 			}
 			var meta = {};
 			if (this._options.lineinfo) {
 				var trace = STACK_TRACE.get();
 			}
-			this.notifyUsedPath(arguments[0], name + "-" + mode, meta);
+			this.notifyUsedPath(arguments[0], name + '-' + mode, meta);
 			return FS[name].apply(null, arguments);
 		};
 	} else
 	if (
-		typeof FS[name] === "function" &&
-		/^[a-z]/.test(name) &&
-		(source = FS[name].toString()) &&
-		(matches = source.match(/function[^\(]+\(([^\)]*)\)/)) &&
-		(args = matches[1].split(", ")) &&
-		(
-			(index = args.indexOf("path")) >= 0 ||
-			(index = args.indexOf("dir")) >= 0 ||
-			(index = args.indexOf("file")) >= 0 ||
-			(index = args.indexOf("filename")) >= 0
-		)
+		typeof FS[name] === 'function' &&
+		/^[a-z]/.test(name)
 	) {
-		FileFS.prototype[name] = function() {
-			var meta = {};
-			if (this._options.lineinfo) {
-				var trace = STACK_TRACE.get();
-				meta.file = trace[1].getFileName();
-				meta.line = trace[1].getLineNumber();
-			}
-			this.notifyUsedPath(arguments[index], name, meta);
-			var cb = arguments[arguments.length-1];
-			if (typeof cb === "function" && name !== "exists") {
-				arguments[arguments.length-1] = function(err) {
-					if (err) {
-						//console.error("[pinf-vfs-js] ERROR: While calling '" + name + "' for '" + arguments[index] + "'", err);
-					}
-					return cb.apply(null, arguments);
+		const matches = FS[name].toString().match(/function[^\(]+\(([^\)]*)\)/);
+		if (
+			exports.READ_METHODS[name] ||
+			exports.WRITE_METHODS[name]
+		) {
+			FileFS.prototype[name] = function () {
+				var meta = {};
+				if (this._options.lineinfo) {
+					var trace = STACK_TRACE.get();
+					meta.file = trace[1].getFileName();
+					meta.line = trace[1].getLineNumber();
 				}
-			}
-			try {
-				return FS[name].apply(null, arguments);
-			} catch(err) {
-				//console.error("[pinf-vfs-js] ERROR: While calling '" + name + "' for '" + arguments[index] + "'", err);
-				throw err;
-			}
-		};
-	} else {
+				this.notifyUsedPath(arguments[0], name, meta);
+				var cb = arguments[arguments.length-1];
+				if (typeof cb === 'function' && name !== 'exists') {
+					arguments[arguments.length-1] = function (err) {
+						if (err) {
+							//console.error("[mfs] ERROR: While calling '" + name + "' for '" + arguments[index] + "'", err);
+						}
+						return cb.apply(null, arguments);
+					}
+				}
+				try {
+					return FS[name].apply(null, arguments);
+				} catch (err) {
+					//console.error("[mfs] ERROR: While calling '" + name + "' for '" + arguments[index] + "'", err);
+					throw err;
+				}
+			};
+		} else {
+//			console.error("Ignore method:", name, matches[0]);
+		}
+	}
+	if (!FileFS.prototype[name]) {
 		FileFS.prototype[name] = FS[name];
 	}
 });
-
