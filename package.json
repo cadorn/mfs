@@ -7,6 +7,10 @@
     "fs-extra": "~8.1.0",
     "stack-trace": "^0.0.10"
   },
+  "repository": {	
+    "type": "git",
+    "url": "https://github.com/cadorn/mfs.git"
+  },
   "devDependencies": {
     "mocha": "~7.1.0"
   },
